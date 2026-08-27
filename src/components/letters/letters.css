@@ -1,0 +1,899 @@
+/* Retro & Cute aesthetic for Letters Module */
+/* Using Local Font 'STXingkai' (华文行楷) as requested by user */
+@font-face {
+    font-family: 'STXingkai';
+    src: local('STXingkai'), local('华文行楷'), local('STXingkai-SC-Light');
+}
+
+.letters-module-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100vh;
+    background-color: #f7f3e8;
+    /* Warm paper base */
+    font-family: 'Courier New', Courier, monospace;
+    overflow: hidden;
+    position: relative;
+    z-index: 999;
+    /* HIGHEST LEVEL FIX: Ensure it is above any other app layers */
+}
+
+.letters-header {
+    position: absolute;
+    top: 50px;
+    text-align: center;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    /* VERY IMPORTANT: prevent header from blocking clicks below it */
+}
+
+.letters-title {
+    font-size: 2rem;
+    color: #6d4c41;
+    margin: 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    letter-spacing: 2px;
+}
+
+.write-btn {
+    padding: 8px 16px;
+    background: #a1887f;
+    color: #fff;
+    border: 2px dashed #8d6e63;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    pointer-events: auto;
+    /* Reactivate clicks just for the button */
+}
+
+.write-btn:hover {
+    background: #8d6e63;
+    transform: scale(1.05);
+}
+
+.letters-main-area {
+    width: 100vw;
+    flex-grow: 1;
+    /* Take remaining space */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    /* Let clicks pass through this wrapper */
+}
+
+.stack-wrapper {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+    /* Enable clicks internally */
+    z-index: 10;
+}
+
+/* === Envelope Styling === */
+.envelope-container {
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 2500px;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: auto;
+    z-index: 100;
+    touch-action: none;
+}
+
+/* Add a ::after flare to the envelope to simulate paper thickness and ensure a solid hit area */
+.envelope-container::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    /* Slightly larger area for interaction */
+    background-color: transparent;
+    /* Invisible but captures events */
+    pointer-events: auto;
+    /* Ensure it captures events */
+    z-index: -1;
+    /* Behind the actual envelope content */
+}
+
+/* Substantial base with thickness */
+.envelope-back {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #fdfaf3 0%, #eeeadf 100%);
+    border: 2px solid #e0d8c3;
+    /* Thicker border for weight */
+    border-radius: 8px;
+    box-shadow:
+        0 8px 30px rgba(0, 0, 0, 0.12),
+        0 4px 10px rgba(0, 0, 0, 0.08),
+        inset 0 1px 1px rgba(255, 255, 255, 0.8);
+    z-index: 10;
+}
+
+/* Simulate edge thickness */
+.envelope-back::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 9px;
+    pointer-events: none;
+    z-index: 15;
+}
+
+/* The pocket with internal shadow for depth */
+.envelope-back-body {
+    position: absolute;
+    bottom: -1px;
+    left: -1px;
+    right: -1px;
+    height: 72%;
+    background: linear-gradient(to top, #fdfaf3 0%, #f7f3e8 100%);
+    border: 1px solid #d7ccc8;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    z-index: 25;
+    clip-path: polygon(0 100%, 100% 100%, 100% 0, 50% 35%, 0 0);
+    box-shadow:
+        inset 0 20px 20px -10px rgba(0, 0, 0, 0.15),
+        0 -2px 10px rgba(0, 0, 0, 0.05);
+    pointer-events: none;
+    /* Pocket visually over letter, but shouldn't block */
+}
+
+/* The flap that folds down over the pocket */
+.envelope-flap {
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 100%;
+    height: 60%;
+    z-index: 30;
+    /* Initially sits above pocket */
+    transform-origin: top;
+    transform-style: preserve-3d;
+}
+
+.flap-triangle {
+    width: 100%;
+    height: 100%;
+    background-color: #fdfaf3;
+    border: 1px solid #d7ccc8;
+    border-top: none;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+}
+
+.flap-shadow {
+    position: absolute;
+    bottom: -5px;
+    left: 10%;
+    width: 80%;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.1);
+    filter: blur(5px);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    z-index: -1;
+}
+
+/* The letter that slides into/out of the pocket */
+.envelope-pop-letter {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    background-color: #f4ebce;
+    border: 1px solid #d7ccc8;
+    background-image: url('https://www.transparenttextures.com/patterns/old-wall.png');
+    z-index: 20;
+    /* Between back panel and front pocket */
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tiny-paper {
+    width: 80%;
+    height: 80%;
+    border: 1px dashed rgba(109, 76, 65, 0.3);
+}
+
+/* We hide the "front" visually since the user wants the back-flap style directly, but we keep the stamp/sender info overlaid on the "back-body" pocket to combine styles */
+.envelope-front {
+    position: absolute;
+    inset: 0;
+    z-index: 35;
+    /* Highest, sitting on front pocket */
+    pointer-events: none;
+    /* Let clicks pass to container */
+}
+
+.stack-wrapper {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    margin: 0 auto;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+.stamp-area {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 50px;
+    background: #fff;
+    border: 1px solid #d7ccc8;
+    padding: 2px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stamp {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed rgba(0, 0, 0, 0.2);
+}
+
+/* Stamp Variations */
+.stamp-v1 {
+    background-color: #ffccbc;
+}
+
+.stamp-v1::before {
+    content: '✿';
+    color: #bf360c;
+    font-size: 1.4rem;
+}
+
+.stamp-v2 {
+    background-color: #c8e6c9;
+}
+
+.stamp-v2::before {
+    content: '🍃';
+    color: #2e7d32;
+    font-size: 1.4rem;
+}
+
+.stamp-v3 {
+    background-color: #bbdefb;
+}
+
+.stamp-v3::before {
+    content: '🌊';
+    color: #1565c0;
+    font-size: 1.4rem;
+}
+
+.stamp-v4 {
+    background-color: #fff9c4;
+}
+
+.stamp-v4::before {
+    content: '☀️';
+    color: #f9a825;
+    font-size: 1.4rem;
+}
+
+.stamp-v5 {
+    background-color: #f8bbd0;
+}
+
+.stamp-v5::before {
+    content: '💝';
+    color: #c2185b;
+    font-size: 1.4rem;
+}
+
+.stamp-v6 {
+    background-color: #e1bee7;
+}
+
+.stamp-v6::before {
+    content: '✨';
+    color: #7b1fa2;
+    font-size: 1.4rem;
+}
+
+/* Postmark overlay */
+.stamp-area::after {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    top: -10px;
+    right: -10px;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0, 0, 0, 0.05) 5px, rgba(0, 0, 0, 0.05) 6px);
+}
+
+.sender-info {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    color: #5d4037;
+}
+
+.sender-name {
+    font-family: 'STXingkai', cursive;
+    font-weight: normal;
+    font-size: 1.8rem;
+    margin: 0;
+    margin-bottom: 5px;
+}
+
+.sender-date {
+    font-family: 'STXingkai', cursive;
+    font-size: 1.1rem;
+    margin: 0;
+    color: #795548;
+}
+
+/* Central decorative lines like old airmail */
+.decorative-lines {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.line {
+    height: 2px;
+    background-color: #d7ccc8;
+    width: 100px;
+}
+
+.line-2 {
+    width: 80px;
+    margin: 0 auto;
+}
+
+
+/* === Letter Paper === */
+.letter-paper-wrapper,
+.write-letter-container {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    pointer-events: auto;
+    /* Required to capture clicks over the pointer-events:none parent container */
+    background: rgba(255, 255, 255, 0.3);
+    /* Lighter backdrop */
+    backdrop-filter: blur(4px);
+}
+
+.parchment {
+    width: 70vw;
+    /* Roughly 2/3 of width */
+    height: 80vh;
+    /* Roughly 2/3 of height */
+    max-width: 800px;
+    max-height: 900px;
+    background-color: #f4ebce;
+    background-image: url('https://www.transparenttextures.com/patterns/old-wall.png');
+    /* Subtle texture */
+    border-radius: 8px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    padding: 60px 40px 40px;
+    /* Top padding for close button space */
+    box-sizing: border-box;
+    position: relative;
+    color: #3e2723;
+    display: flex;
+    flex-direction: column;
+}
+
+.close-letter-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    font-size: 30px;
+    color: #8d6e63;
+    cursor: pointer;
+}
+
+.letter-header {
+    margin-bottom: 30px;
+    border-bottom: 1px dashed #d7ccc8;
+    padding-bottom: 10px;
+}
+
+.letter-recipient {
+    font-family: 'STXingkai', cursive;
+    font-size: 1.6rem;
+    color: #5d4037;
+    text-align: left;
+}
+
+.letter-date {
+    text-align: right;
+    font-size: 0.9rem;
+    color: #795548;
+}
+
+.letter-sender {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.letter-body {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    padding-right: 15px;
+}
+
+/* Custom Elegant Scrollbar for Letter Page */
+.letter-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.letter-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.letter-body::-webkit-scrollbar-thumb {
+    background: rgba(141, 110, 99, 0.3);
+    border-radius: 10px;
+}
+
+.letter-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(141, 110, 99, 0.5);
+}
+
+.letter-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: auto;
+    border-top: 1px dashed #d7ccc8;
+    padding-top: 15px;
+    gap: 5px;
+}
+
+.letter-sender {
+    font-family: 'STXingkai', cursive;
+    font-size: 1.6rem;
+    color: #3e2723;
+}
+
+.letter-date {
+    font-family: 'STXingkai', cursive;
+    font-size: 1.1rem;
+    color: #8d6e63;
+}
+
+.handwriting-text {
+    font-family: 'STXingkai', cursive;
+    white-space: pre-wrap;
+    line-height: 1.4;
+    font-size: 1.7rem;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+
+/* === Write Letter Form === */
+.writing-mode {
+    padding: 20px;
+}
+
+.letter-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.form-header {
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.sender-input {
+    background: transparent;
+    border: none;
+    border-bottom: 2px dashed #bcaaa4;
+    outline: none;
+    font-family: 'STXingkai', cursive;
+    font-size: 1.6rem;
+    color: #3e2723;
+    padding: 5px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.input-prefix {
+    font-family: 'STXingkai', cursive;
+    font-size: 1.6rem;
+    color: #5d4037;
+    white-space: nowrap;
+}
+
+.date-input {
+    width: 250px;
+    margin-left: 10px;
+}
+
+.textarea-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.letter-textarea {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: 1px solid rgba(188, 170, 164, 0.3);
+    outline: none;
+    resize: none;
+    font-family: 'STXingkai', cursive;
+    font-size: 1.7rem;
+    color: #3e2723;
+    line-height: 1.4;
+    /* Note: should roughly match lineHeight in WriteLetter.jsx */
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.letter-textarea::placeholder,
+.sender-input::placeholder {
+    font-family: 'STXingkai', cursive;
+    opacity: 0.6;
+}
+
+.writing-pen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 24px;
+    pointer-events: none;
+    z-index: 10;
+    transform-origin: bottom left;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-cancel,
+.btn-send {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'STXingkai', cursive;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.btn-cancel {
+    background: #d7ccc8;
+    color: #5d4037;
+}
+
+.btn-send {
+    background: #8d6e63;
+    color: #fff;
+}
+
+.btn-cancel:hover {
+    background: #bcaaa4;
+}
+
+.btn-send:hover {
+    background: #6d4c41;
+}
+
+/* Pen Illustration in the corner - Game interactive style */
+.corner-pen-illustration {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 100px;
+    height: 100px;
+    z-index: 90;
+    pointer-events: auto;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+    border-radius: 50%;
+    border: 2px solid #8d6e63;
+    box-shadow: 0 8px 32px rgba(139, 110, 99, 0.2);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: pen-float 4s ease-in-out infinite;
+}
+
+.corner-pen-illustration svg {
+    width: 55%;
+    height: 55%;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.pen-label {
+    font-size: 0.75rem;
+    color: #8d6e63;
+    font-weight: bold;
+    margin-top: -5px;
+    opacity: 0.8;
+}
+
+.corner-pen-illustration:hover {
+    transform: scale(1.15) rotate(-5deg) translateY(-5px);
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 15px 45px rgba(139, 110, 99, 0.3);
+}
+
+.corner-pen-illustration:active {
+    transform: scale(0.95);
+}
+
+@keyframes pen-float {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0);
+    }
+
+    50% {
+        transform: translateY(-12px) rotate(5deg);
+    }
+}
+
+/* === Loading States === */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(247, 243, 232, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    backdrop-filter: blur(5px);
+}
+
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 3px solid #8d6e63;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+.loader::after {
+    content: '';
+    box-sizing: border-box;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-bottom-color: #ff3d00;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* === Drafts Tray === */
+.drafts-tray {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    z-index: 1000;
+    transition: all 0.5s ease;
+}
+
+/* Hide tray when writing */
+.letters-module-container:has(.writing-mode) .drafts-tray {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 50px);
+}
+
+.draft-item {
+    width: 80px;
+    height: 110px;
+    background-color: #f4ebce;
+    background-image: url('https://www.transparenttextures.com/patterns/old-wall.png');
+    border: 1px solid #e0d8c0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 15px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+.draft-item:hover {
+    transform: translateY(-8px) rotate(-3deg) scale(1.05);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+}
+
+.draft-item::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, rgba(141, 110, 99, 0.08));
+    pointer-events: none;
+}
+
+/* Removed '稿纸' label from top right */
+.draft-item::before {
+    display: none;
+}
+
+.draft-sender-preview {
+    font-family: 'STXingkai', cursive;
+    font-size: 0.85rem;
+    color: #5d4037;
+    text-align: center;
+    opacity: 0.7;
+    padding: 0 5px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.delete-draft-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    border: none;
+    background: rgba(141, 110, 99, 0.1);
+    color: #8d6e63;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.draft-item:hover .delete-draft-btn {
+    opacity: 1;
+}
+
+.delete-draft-btn:hover {
+    background: #e53935;
+    color: #fff;
+}
+
+/* Tiny scribbles on the draft paper */
+.draft-lines-preview {
+    position: absolute;
+    bottom: 12px;
+    width: 80%;
+    height: 40px;
+    background-image: repeating-linear-gradient(transparent,
+            transparent 10px,
+            rgba(141, 110, 99, 0.2) 10px,
+            rgba(141, 110, 99, 0.2) 11px);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* === Write Letter Bottom Layout === */
+.writing-mode .form-header {
+    justify-content: flex-start;
+}
+
+.writing-mode .form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 10px;
+}
+
+.date-input-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.btn-draft {
+    background: #a1887f;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'STXingkai', cursive;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.btn-draft:hover {
+    background: #8d6e63;
+    transform: scale(1.05);
+}
+
+.date-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.date-input-container .sender-input {
+    width: 200px;
+    border-bottom: 1px solid #d7ccc8;
+    font-size: 1.4rem;
+}

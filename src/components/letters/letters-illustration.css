@@ -1,0 +1,32 @@
+/* Add to the bottom of the file */
+
+/* Pen Illustration in the corner */
+.corner-pen-illustration {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    width: 250px;
+    height: auto;
+    z-index: 90;
+    pointer-events: none;
+    /* Let clicks pass through to envelopes if needed */
+    filter: drop-shadow(-5px 5px 15px rgba(0, 0, 0, 0.3));
+    /* Give it a slight angle to look natural */
+    transform: rotate(-10deg);
+}
+
+/* Adjust the Letters module container to accommodate absolute positioned elements safely */
+.letters-module-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100vh;
+    background-color: #f7f3e8;
+    background-image: radial-gradient(circle at center, #fdfaf3 0%, #ecdcca 100%);
+    /* Add a subtle vignette */
+    font-family: 'Courier New', Courier, monospace;
+    overflow: hidden;
+    position: relative;
+}

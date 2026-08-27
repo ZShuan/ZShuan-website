@@ -1,0 +1,21 @@
+.bounceCardsContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+    pointer-events: auto;
+    touch-action: pan-y;
+}
+
+.bounceCardsContainer .card {
+    position: absolute;
+    width: 400px;
+    height: 280px;
+    transform-style: preserve-3d;
+    will-change: transform;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+/* We don't use the .image class from the example, we'll render Envelope directly */
