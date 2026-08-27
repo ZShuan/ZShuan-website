@@ -33,6 +33,18 @@ if (-not $token) {
 $b64 = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("ZShuan:$token"))
 $authHeader = "AUTHORIZATION: basic $b64"
 
+# 网络不稳定时自动重试 git 命令（最多 5 次）
+function Invoke-GitRetry {
+    param([string[]]$GitArgs)
+    foreach ($i in 1..5) {
+        git -c http.version=HTTP/1.1 -c http.postBuffer=209715200 -c http.extraheader="$authHeader" @GitArgs 2>&1 | Out-Host
+        if ($LASTEXITCODE -eq 0) { return $true }
+        Write-Host "（网络不稳定，第 $i 次重试中...）"
+        Start-Sleep -Seconds 8
+    }
+    return $false
+}
+
 # 2. 构建项目
 Write-Host "`n[1/4] 构建项目..."
 if (Get-Command npm -ErrorAction SilentlyContinue) {
@@ -57,9 +69,11 @@ if ($staged) {
     Write-Host "（没有代码变更，跳过 main 提交）"
 }
 # 先同步远端（防止网页端上传照片等操作产生的新提交导致推送被拒）
-git -c http.version=HTTP/1.1 -c http.extraheader="$authHeader" pull --rebase origin main
-git -c http.version=HTTP/1.1 -c http.postBuffer=209715200 -c http.extraheader="$authHeader" push origin main
-if ($LASTEXITCODE -ne 0) {
+if (-not (Invoke-GitRetry @('pull', '--rebase', 'origin', 'main'))) {
+    Write-Host "main 同步失败，请检查网络" -ForegroundColor Red
+    exit 1
+}
+if (-not (Invoke-GitRetry @('push', 'origin', 'main'))) {
     Write-Host "main 推送失败，请检查 Token 权限" -ForegroundColor Red
     exit 1
 }
@@ -70,15 +84,17 @@ $tmp = Join-Path $env:TEMP "towhere-ghpages"
 if (Test-Path $tmp) {
     Remove-Item -LiteralPath $tmp -Recurse -Force
 }
-git -c http.version=HTTP/1.1 -c http.extraheader="$authHeader" fetch origin gh-pages
+if (-not (Invoke-GitRetry @('fetch', 'origin', 'gh-pages'))) {
+    Write-Host "gh-pages 拉取失败" -ForegroundColor Red
+    exit 1
+}
 git worktree add $tmp gh-pages | Out-Null
 Push-Location $tmp
 git rm -rf -q .
 Copy-Item -Path "$PSScriptRoot\dist\*" -Destination $tmp -Recurse -Force
 git add -A
 git commit -m "Deploy $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" | Out-Null
-git -c http.version=HTTP/1.1 -c http.postBuffer=209715200 -c http.extraheader="$authHeader" push origin gh-pages
-if ($LASTEXITCODE -ne 0) {
+if (-not (Invoke-GitRetry @('push', 'origin', 'gh-pages'))) {
     Write-Host "gh-pages 推送失败" -ForegroundColor Red
     Pop-Location
     git worktree remove $tmp --force
