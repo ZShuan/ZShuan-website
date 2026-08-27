@@ -124,7 +124,6 @@ src/
 public/
   cesium/              Cesium runtime assets
   images/              Static images and city media
-  music/               Background music
   video/               Intro and travel videos
 
 docs/images/           README preview images

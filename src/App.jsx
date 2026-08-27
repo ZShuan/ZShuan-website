@@ -9,7 +9,6 @@ import PinkAnimationHome from './components/PinkAnimationHome';
 import FirstsTimeline from './components/firsts/FirstsTimeline';
 import LettersModule from './components/letters/LettersModule';
 import LettersIcon from './components/letters/LettersIcon';
-import MusicPlayer from './components/MusicPlayer';
 
 export default function App() {
   const [page, setPage] = useState('home');
@@ -207,7 +206,6 @@ export default function App() {
             </div>
           )}
 
-          <MusicPlayer />
         </div>
   );
 }
