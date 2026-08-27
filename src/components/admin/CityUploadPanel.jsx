@@ -1,8 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import imageCompression from 'browser-image-compression';
-import { uploadFileToGitHub, listFilesInDir, deleteFileFromGitHub, getJsDelivrUrl } from '../../lib/githubApi';
 import { supabase } from '../../lib/supabaseClient';
+import { uploadCityImage, deleteStorageImages, pathFromPublicUrl, CITY_BUCKET } from '../../lib/supabaseStorage';
 
 export default function CityUploadPanel({ onBack, onCityCreated }) {
     const [cityName, setCityName] = useState('');
@@ -24,6 +24,7 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
     const fileInputRef = useRef(null);
     const dragItem = useRef();
     const dragOverItem = useRef();
+    const originalCityImageUrlsRef = useRef([]); // 编辑时 DB 里已有的图片 URL，用于清理被移除的存储孤儿
 
     // ========= Fetch Locations =========
     const fetchCities = useCallback(async () => {
@@ -127,6 +128,7 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
                 cdnUrl: img.url,
                 status: 'done'
             })));
+            originalCityImageUrlsRef.current = (imgData || []).map(img => img.url);
         }
     };
 
@@ -138,6 +140,7 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
         setLng('');
         setLat('');
         setImages([]);
+        originalCityImageUrlsRef.current = [];
         setSubmitResult({ status: '', message: '' });
     };
 
@@ -149,16 +152,10 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
 
         try {
             setUploadProgress(10);
-            const folderPath = `public/images/cities/${cityName.trim()}`;
-
-            // 1. Audit GitHub directory
-            const auditRes = await listFilesInDir(folderPath);
-            const existingFilesOnGitHub = auditRes.success ? auditRes.files : [];
-
             const finalUrls = [];
             const uploadedPaths = [];
 
-            // 2. Process images
+            // 1. Process images
             for (let i = 0; i < images.length; i++) {
                 const img = images[i];
                 setUploadProgress(Math.floor(10 + (i / images.length) * 70));
@@ -175,18 +172,15 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
                     reader.readAsDataURL(compressed);
                 });
 
-                const fileName = `${Date.now()}_${i}_${img.file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-                const path = `${folderPath}/${fileName}`;
-
-                const res = await uploadFileToGitHub(path, base64, `Upload: ${cityName}/${fileName}`);
-                if (!res.success) {
-                    throw new Error(res.error || '图片上传失败');
+                const { publicUrl: upUrl, path: upPath } = await uploadCityImage(compressed, cityName.trim());
+                if (!upUrl) {
+                    throw new Error('图片上传失败');
                 }
-                uploadedPaths.push(path);
-                finalUrls.push(res.url);
+                uploadedPaths.push(upPath);
+                finalUrls.push(upUrl);
             }
 
-            // 3. Update Supabase
+            // 2. Update Supabase DB
             const mainImage = finalUrls[0] || '';
             const cityPayload = {
                 name: cityName.trim(),
@@ -215,13 +209,12 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
                 await supabase.from('city_images').insert(imgRecords);
             }
 
-            // 4. Cleanup Orphans on GitHub
-            for (const file of existingFilesOnGitHub) {
-                // Use filename-based check instead of full URL to avoid encoding/format issues
-                const isStillNeeded = finalUrls.some(url => url.includes(encodeURIComponent(file.name)));
-
-                if (!isStillNeeded) {
-                    await deleteFileFromGitHub(file.path, file.sha, `Cleanup: Remove old image for ${cityName}`);
+            // 3. Cleanup storage orphans (images removed during this edit)
+            if (editingCityId && originalCityImageUrlsRef.current.length) {
+                const orphans = originalCityImageUrlsRef.current.filter(url => !finalUrls.includes(url));
+                const orphanPaths = orphans.map(url => pathFromPublicUrl(url, CITY_BUCKET)).filter(Boolean);
+                if (orphanPaths.length) {
+                    await deleteStorageImages(orphanPaths, CITY_BUCKET);
                 }
             }
 
@@ -239,15 +232,7 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
         } catch (err) {
             // 上传已成功但后续步骤失败时，尽力清理本次已上传的孤儿图片
             try {
-                const folderPath = `public/images/cities/${cityName.trim()}`;
-                const audit = await listFilesInDir(folderPath);
-                if (audit.success) {
-                    for (const file of audit.files) {
-                        if (uploadedPaths.includes(file.path)) {
-                            await deleteFileFromGitHub(file.path, file.sha, `Cleanup: failed upload for ${cityName}`);
-                        }
-                    }
-                }
+                await deleteStorageImages(uploadedPaths, CITY_BUCKET);
             } catch (cleanupErr) {
                 console.error('Cleanup failed:', cleanupErr);
             }
@@ -260,16 +245,18 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
 
     const handleDeleteCity = async () => {
         if (!editingCityId) return;
-        if (!window.confirm(`确定要删除地点「${cityName}」吗？（这也会清除 GitHub 上的照片）`)) return;
+        if (!window.confirm(`确定要删除地点「${cityName}」吗？（这也会清除 Supabase Storage 上的照片）`)) return;
         setIsSubmitting(true);
 
         try {
-            const folderPath = `public/images/cities/${cityName.trim()}`;
-            const auditRes = await listFilesInDir(folderPath);
-            if (auditRes.success) {
-                for (const file of auditRes.files) {
-                    await deleteFileFromGitHub(file.path, file.sha, `Cleanup: Delete city ${cityName}`);
-                }
+            // 删除该城市在 Supabase Storage 上的图片对象
+            const { data: rows } = await supabase
+                .from('city_images')
+                .select('url')
+                .eq('city_id', editingCityId);
+            const deletePaths = (rows || []).map(r => pathFromPublicUrl(r.url, CITY_BUCKET)).filter(Boolean);
+            if (deletePaths.length) {
+                await deleteStorageImages(deletePaths, CITY_BUCKET);
             }
 
             const { error } = await supabase.from('cities').delete().eq('id', editingCityId);
