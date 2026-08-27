@@ -20,7 +20,7 @@ export default function CesiumGlobe({ goToCity, activeStage = -1, stageAnimating
   const lastTickTimeRef = useRef(performance.now());
 
   // 地图风格状态
-  const [mapStyle, setMapStyle] = useState('satellite'); // 默认高清在线底图（ArcGIS 卫星图）
+  const [mapStyle, setMapStyle] = useState('local'); // 默认本地底图，避免在线瓦片卡顿
   const currentImageryLayerRef = useRef(null);
 
   // 地图风格配置（使用瓦片地图服务，支持缩放更新）
