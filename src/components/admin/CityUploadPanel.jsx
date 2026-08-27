@@ -490,6 +490,7 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
 }
 
 // ========= Premium CSS Layout =========
+const IS_NARROW = typeof window !== 'undefined' && window.innerWidth < 900;
 const panelWrapperStyle = {
     position: 'fixed',
     inset: 0,
@@ -502,7 +503,7 @@ const panelWrapperStyle = {
     backdropFilter: 'blur(20px)'
 };
 const headerStyle = {
-    padding: '30px 40px',
+    padding: IS_NARROW ? '20px 20px' : '30px 40px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -516,7 +517,8 @@ const contentGridStyle = {
     display: 'flex',
     overflow: 'hidden',
     padding: '0 40px 40px',
-    gap: '20px'
+    gap: '20px',
+    ...(IS_NARROW ? { flexDirection: 'column', overflowY: 'auto', padding: '0 16px 32px' } : {}),
 };
 
 const leftColumnStyle = {
@@ -528,6 +530,7 @@ const leftColumnStyle = {
     overflow: 'hidden', // 防止整体列滚动，转而让内部区域滚动
     minWidth: 0,
     height: '100%',
+    ...(IS_NARROW ? { height: 'auto', overflow: 'visible' } : {}),
 };
 
 const rightColumnStyle = {
@@ -540,7 +543,8 @@ const rightColumnStyle = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    minWidth: '300px'
+    minWidth: '300px',
+    ...(IS_NARROW ? { minWidth: 'auto', flex: 'none', width: '100%', overflow: 'visible' } : {}),
 };
 
 const sectionCardStyle = {

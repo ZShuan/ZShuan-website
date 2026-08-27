@@ -223,6 +223,29 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
             borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
         };
 
+    // 控制栏：桌面在右下（含“地点列表/地点管理”），移动端移到右上角，便于快速入口
+    const controlBarStyle = isMobile
+        ? {
+            position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: '14px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'rgba(10, 15, 26, 0.75)', borderRadius: '20px',
+            padding: '6px 10px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.3)', zIndex: 20,
+        }
+        : {
+            position: 'absolute', bottom: '20px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'rgba(10, 15, 26, 0.75)', borderRadius: '20px',
+            padding: '8px 12px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.3)', zIndex: 20,
+            ...(showSidebar ? {
+                left: `calc(100% - ${sidebarWidth / 2}px)`, right: 'auto',
+                transform: 'translateX(-50%)', width: `${sidebarWidth - 40}px`,
+            } : {
+                right: '20px', left: 'auto', transform: 'none', width: 'auto',
+            }),
+        };
+
     return (
         <div
             style={{
@@ -282,24 +305,12 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
                 ))}
             </motion.div>
 
-            {/* Bottom Right Control Bar - Hidden on Mobile */}
-            {window.innerWidth >= 768 && (
-                <div style={{
-                    position: 'absolute', bottom: '20px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: 'rgba(10, 15, 26, 0.75)', borderRadius: '20px',
-                    padding: '8px 12px',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.3)', zIndex: 20,
-                    ...(showSidebar ? {
-                        left: `calc(100% - ${sidebarWidth / 2}px)`, right: 'auto',
-                        transform: 'translateX(-50%)', width: `${sidebarWidth - 40}px`,
-                    } : {
-                        right: '20px', left: 'auto', transform: 'none', width: 'auto',
-                    }),
-                }}>
+            {/* 控制栏：桌面右下 / 移动端右上，均提供地点列表与管理入口 */}
+            <div style={controlBarStyle}>
                     <button onClick={() => setShowSidebar(!showSidebar)}
-                        style={{ background: 'none', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer', marginRight: '8px' }}>
-                        {showSidebar ? '›' : '‹'}
+                        style={{ background: 'none', border: 'none', color: 'white', fontSize: isMobile ? '16px' : '20px', cursor: 'pointer', marginRight: '6px' }}
+                        title="查看地点列表">
+                        {isMobile ? (showSidebar ? '✕' : '📍') : (showSidebar ? '›' : '‹')}
                     </button>
                     <button
                         onClick={() => setShowAdmin(true)}
@@ -320,7 +331,6 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
                         地点管理
                     </button>
                 </div>
-            )}
 
 
             {/* City Sidebar */}
