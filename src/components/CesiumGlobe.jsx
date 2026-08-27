@@ -101,7 +101,7 @@ export default function CesiumGlobe({ goTo, goToCity, transitionMode = false, sc
 
       // 创建最简单的 Viewer 配置
       viewer.current = new Cesium.Viewer(cesiumContainer.current, {
-        contextOptions: { webgl: { alpha: true, antialias: false } },
+        contextOptions: { webgl: { alpha: true, antialias: false, powerPreference: 'high-performance' } },
         baseLayerPicker: false,
         timeline: false,
         animation: false,
@@ -134,6 +134,8 @@ export default function CesiumGlobe({ goTo, goToCity, transitionMode = false, sc
       // 设置地球基础样式
       viewer.current.scene.globe.enableLighting = false;
       viewer.current.scene.globe.show = true;
+      // 关闭 HDR 渲染，弱显卡上更省开销，视觉差异很小
+      viewer.current.scene.highDynamicRange = false;
 
       // 关闭瓦片预加载，避免后台持续拉取在线瓦片导致卡顿
       viewer.current.scene.globe.preloadAncestors = false;
@@ -146,18 +148,21 @@ export default function CesiumGlobe({ goTo, goToCity, transitionMode = false, sc
       viewer.current.scene.backgroundColor = new Cesium.Color(0, 0, 0, 0); // Transparent to show CSS gradient
       const starPoints = viewer.current.scene.primitives.add(new Cesium.PointPrimitiveCollection());
       starsRef.current = starPoints; // Store for rotation stabilization
-      for (let i = 0; i < 1200; i++) {
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
+      // 60 颗星星，用斐波那契球面均匀分布在地球周围
+      const STAR_COUNT = 60;
+      const goldenRatio = (1 + Math.sqrt(5)) / 2;
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const theta = Math.acos(1 - (2 * (i + 0.5)) / STAR_COUNT);
+        const phi = 2 * Math.PI * i / goldenRatio;
         const r = 1e9;
         starPoints.add({
           position: new Cesium.Cartesian3(
-            r * Math.sin(phi) * Math.cos(theta),
-            r * Math.sin(phi) * Math.sin(theta),
-            r * Math.cos(phi)
+            r * Math.sin(theta) * Math.cos(phi),
+            r * Math.sin(theta) * Math.sin(phi),
+            r * Math.cos(theta)
           ),
-          pixelSize: 0.8 + Math.random() * 1.8,
-          color: Cesium.Color.fromAlpha(Cesium.Color.WHITE, 0.5 + Math.random() * 0.5)
+          pixelSize: 1.0 + (i % 3) * 0.5,
+          color: Cesium.Color.fromAlpha(Cesium.Color.WHITE, 0.6 + (i % 4) * 0.1)
         });
       } // Higher quality tiles
 
