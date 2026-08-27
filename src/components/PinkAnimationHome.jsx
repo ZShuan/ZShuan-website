@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import CesiumGlobe from './CesiumGlobe';
 import { supabase } from '../lib/supabaseClient';
 import AdminTokenManager from './admin/AdminTokenManager';
@@ -21,14 +21,8 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
     const [isAnimating, setIsAnimating] = useState(true); // Whether CesiumGlobe should animate
     const [carouselActive, setCarouselActive] = useState(true);
     const [showSidebar, setShowSidebar] = useState(false);
-    const [showInfoModal, setShowInfoModal] = useState(false);
-    const [logContent, setLogContent] = useState('');
-    const DEFAULT_LOG = '· 5.28 决定要给阿肴做一个独一无二的生日礼物\n· 6.28 在台湾旅行之后，开始有思路\n· 7.13 正式开始开发 《一路向哪？》 网站\n· 8.28 《一路向哪？》V1.0 上线啦！';
-    const [logSaving, setLogSaving] = useState(false);
-    const [logSaved, setLogSaved] = useState(false);
     const [cities, setCities] = useState([]);
     const [cityPoints, setCityPoints] = useState([]);
-    const saveTimerRef = useRef(null);
     const carouselTimerRef = useRef(null);
     const carouselIndexRef = useRef(0);
     const inactivityTimerRef = useRef(null);
@@ -186,48 +180,6 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
         startInactivityTimer();
     }, [stopCarousel, startInactivityTimer]);
 
-    // ========= Supabase Log =========
-    useEffect(() => {
-        const loadLog = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('towhere_logs')
-                    .select('content')
-                    .order('id', { ascending: true })
-                    .limit(1)
-                    .single();
-                if (data && !error && data.content) {
-                    setLogContent(data.content);
-                } else {
-                    console.log('No log data or error, using default');
-                    setLogContent(DEFAULT_LOG);
-                }
-            } catch (e) {
-                console.log('Log load failed:', e.message);
-                setLogContent(DEFAULT_LOG);
-            }
-        };
-        loadLog();
-    }, []);
-
-    const handleLogChange = (value) => {
-        setLogContent(value);
-        setLogSaved(false);
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = setTimeout(async () => {
-            setLogSaving(true);
-            try {
-                const { error } = await supabase
-                    .from('towhere_logs')
-                    .upsert({ id: 1, content: value, updated_at: new Date().toISOString() });
-                if (!error) setLogSaved(true);
-            } catch (e) {
-                console.error('Log save failed:', e);
-            }
-            setLogSaving(false);
-        }, 1000);
-    };
-
     const sidebarWidth = 250;
 
     return (
@@ -324,13 +276,6 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
                     >
                         地点管理
                     </button>
-                    <button onClick={() => setShowInfoModal(true)}
-                        style={{
-                            width: '32px', height: '32px', borderRadius: '50%',
-                            background: 'rgba(255, 255, 255, 0.2)', border: '1px solid rgba(255, 255, 255, 0.3)',
-                            color: 'white', fontSize: '16px', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold'
-                        }}>?</button>
                 </div>
             )}
 
@@ -381,60 +326,6 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
                     )}
                 </div>
             </div>
-
-            {/* Info Modal */}
-            <AnimatePresence>
-                {showInfoModal && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        onClick={() => setShowInfoModal(false)}
-                        style={{
-                            position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.88)',
-                            zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            padding: '40px', cursor: 'pointer'
-                        }}>
-                        <div onClick={(e) => e.stopPropagation()}
-                            style={{
-                                display: 'flex',
-                                gap: '24px',
-                                maxWidth: '1100px',
-                                width: '100%',
-                                maxHeight: '70vh',
-                                cursor: 'default',
-                                alignItems: 'stretch'
-                            }}>
-                            <div style={{
-                                flex: 1,
-                                borderRadius: '12px',
-                                overflow: 'hidden',
-                                boxShadow: '0 0 30px rgba(0,0,0,0.5)',
-                                background: 'transparent',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <video src={`${import.meta.env.BASE_URL}video/all.mp4`} autoPlay loop muted controls playsInline
-                                    style={{ width: '100%', height: '100%', display: 'block', outline: 'none', objectFit: 'cover' }} />
-                            </div>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingLeft: '10px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '0.75rem', color: logSaving ? '#ffd700' : logSaved ? '#4caf50' : 'transparent' }}>
-                                        {logSaving ? '保存中...' : logSaved ? '✓ 已保存' : '.'}
-                                    </span>
-                                </div>
-                                <textarea value={logContent} onChange={(e) => handleLogChange(e.target.value)}
-                                    style={{
-                                        flex: 1, width: '100%', background: 'transparent',
-                                        border: 'none', borderRadius: '0',
-                                        color: 'rgba(255,255,255,0.9)', padding: '0', fontSize: '1.05rem',
-                                        lineHeight: '2.2', resize: 'none', outline: 'none',
-                                        fontFamily: 'inherit', boxSizing: 'border-box'
-                                    }}
-                                    placeholder="在这里记录网站开发日志..." />
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* Admin Panel (Easter Egg) */}
             <AdminTokenManager
