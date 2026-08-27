@@ -7,7 +7,15 @@ const Navbar = ({ activeTab, setTab, isMobile }) => {
         { id: 'breaking', label: '初时' },
     ];
 
-    const tabs = isMobile ? allTabs.filter(t => ['towhere', 'breaking'].includes(t.id)) : allTabs;
+    // 桌面端沿用量：顶部导航 2 个页签（信箱走右上角信封图标）
+    // 移动端：底部导航 3 个页签，信箱也能直达
+    const tabs = isMobile
+        ? [
+            { id: 'towhere', label: '一路向哪' },
+            { id: 'breaking', label: '初时' },
+            { id: 'letters', label: '信箱' },
+        ]
+        : allTabs;
 
     return (
         <nav className="fixed-navbar">

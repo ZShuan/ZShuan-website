@@ -200,6 +200,29 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
 
     const sidebarWidth = 250;
 
+    // 移动端：右侧栏改为从底部滑出的抽屉，避免占满窄屏
+    const sidebarStyle = isMobile
+        ? {
+            position: 'absolute', left: 0, right: 0, bottom: 0, top: 'auto',
+            height: '68vh', width: '100%',
+            background: 'rgba(10, 15, 26, 0.96)',
+            transform: showSidebar ? 'translateY(0)' : 'translateY(100%)',
+            transition: 'transform 0.3s ease',
+            display: 'flex', flexDirection: 'column',
+            padding: '20px 20px 96px', boxSizing: 'border-box', zIndex: 10,
+            borderTopLeftRadius: '20px', borderTopRightRadius: '20px',
+            borderLeft: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+        }
+        : {
+            position: 'absolute', top: 0, right: 0, height: '100vh',
+            width: `${sidebarWidth}px`, background: 'rgba(0, 0, 0, 0.85)',
+            transform: showSidebar ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.3s ease',
+            display: 'flex', flexDirection: 'column',
+            padding: '20px', boxSizing: 'border-box', zIndex: 10,
+            borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+        };
+
     return (
         <div
             style={{
@@ -226,7 +249,7 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
                 transition={{ duration: 1.0 }} // Reduced duration and removed delay for better response
                 style={{
                     position: 'absolute',
-                    bottom: isMobile ? '80px' : '32px', // Stay above the music ball/safe area on mobile
+                    bottom: isMobile ? '110px' : '32px', // Stay above the bottom navbar on mobile
                     left: '50%',
                     transform: 'translateX(-50%)',
                     display: 'flex',
@@ -301,15 +324,7 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
 
 
             {/* City Sidebar */}
-            <div style={{
-                position: 'absolute', top: 0, right: 0, height: '100vh',
-                width: `${sidebarWidth}px`, background: 'rgba(0, 0, 0, 0.85)',
-                transform: showSidebar ? 'translateX(0)' : 'translateX(100%)',
-                transition: 'transform 0.3s ease',
-                display: 'flex', flexDirection: 'column',
-                padding: '20px', boxSizing: 'border-box', zIndex: 10,
-                borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
-            }}>
+            <div style={sidebarStyle}>
                 <h2 style={{
                     color: 'white',
                     margin: '0 0 20px 0',
