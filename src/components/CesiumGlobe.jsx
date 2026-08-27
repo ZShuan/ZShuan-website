@@ -118,6 +118,9 @@ export default function CesiumGlobe({ goTo, goToCity, transitionMode = false, sc
       });
 
       viewer.current.clock.shouldAnimate = true;
+      // 高 DPI 适配：Retina/高分屏下地球更清晰；上限 1.5，避免 2x~3x 像素
+      // 渲染让弱显卡重新变卡
+      viewer.current.cesiumWidget.resolutionScale = Math.min(window.devicePixelRatio || 1, 1.5);
       // 关键：maximumRenderTimeChange 默认值为 0，会让 Cesium 在模拟时间每
       // 次变化时都强制渲染，导致 requestRenderMode 失效。设为大值后，空闲
       // 时只在相机变化或被显式请求时才渲染，界面响应明显变快。
@@ -343,9 +346,15 @@ export default function CesiumGlobe({ goTo, goToCity, transitionMode = false, sc
 
       // ========= Label Occlusion Post-Render Manager =========
       // Hides overlapping labels to prevent clutter
+      let lastLabelOcclusionRun = 0;
       const resolveLabelOcclusion = () => {
         if (!viewer.current) return;
         const labels = viewer.current.entities.values.filter(e => e.label);
+        // 标签很少时无需检测；并且节流到 500ms 一次，避免每帧 O(n²)
+        if (labels.length < 10) return;
+        const now = performance.now();
+        if (now - lastLabelOcclusionRun < 500) return;
+        lastLabelOcclusionRun = now;
         const screenCoords = [];
 
         // Reset visibility first (only for distance Check)
@@ -920,6 +929,28 @@ export default function CesiumGlobe({ goTo, goToCity, transitionMode = false, sc
 
   return (
     <div ref={cesiumContainer} style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden', position: 'relative' }}>
+
+      {/* 底图切换按钮：本地底图（流畅）/ 高清在线底图（细节多） */}
+      <button
+        onClick={() => setMapStyle(prev => prev === 'local' ? 'satellite' : 'local')}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          zIndex: 100,
+          background: 'rgba(10, 15, 26, 0.75)',
+          color: 'rgba(255, 255, 255, 0.85)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '20px',
+          padding: '8px 14px',
+          fontSize: '13px',
+          cursor: 'pointer',
+          transition: 'opacity 0.2s',
+        }}
+        title="本地底图加载快、流畅；高清在线底图细节更多但依赖网络"
+      >
+        {mapStyle === 'local' ? '🗺 高清底图' : '🗺 本地底图'}
+      </button>
 
       {/* 月球照片浏览器 - 触控滑动版本 */}
       {showMoonPhotos && (
