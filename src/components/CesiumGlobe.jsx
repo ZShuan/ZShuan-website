@@ -21,6 +21,7 @@ export default function CesiumGlobe({ goToCity, activeStage = -1, stageAnimating
 
   // 地图风格状态
   const [mapStyle, setMapStyle] = useState('local'); // 默认本地底图，避免在线瓦片卡顿
+  const [globeReady, setGlobeReady] = useState(false); // 地球首帧渲染完成，用于隐藏加载遮罩
   const currentImageryLayerRef = useRef(null);
 
   // 地图风格配置（使用瓦片地图服务，支持缩放更新）
@@ -86,6 +87,9 @@ export default function CesiumGlobe({ goToCity, activeStage = -1, stageAnimating
 
   useEffect(() => {
     if (!cesiumContainer.current || viewer.current) return;
+
+    let readyTimeout = null;
+    let markReady = null;
 
     try {
       // 设置 Cesium 静态资源路径
@@ -378,12 +382,28 @@ export default function CesiumGlobe({ goToCity, activeStage = -1, stageAnimating
 
       viewer.current.cesiumWidget.canvas.addEventListener('click', clickHandler);
 
+      let firstRenderDone = false;
+      // 首帧渲染完成即隐藏加载遮罩；带 3s 兜底超时，避免一直卡住
+      markReady = () => {
+        if (firstRenderDone) return;
+        firstRenderDone = true;
+        setGlobeReady(true);
+        if (viewer.current) viewer.current.scene.postRender.removeEventListener(markReady);
+      };
+      viewer.current.scene.postRender.addEventListener(markReady);
+      viewer.current.scene.requestRender(); // 强制先渲染一帧
+      readyTimeout = setTimeout(markReady, 3000);
+
     } catch (error) {
     }
 
     // 清理函数
     return () => {
       try {
+        if (readyTimeout) clearTimeout(readyTimeout);
+        if (viewer.current && markReady) {
+          viewer.current.scene.postRender.removeEventListener(markReady);
+        }
         if (viewer.current) {
           // Extra cleanup for custom listeners
           if (typeof resolveLabelOcclusion === 'function') {
@@ -648,16 +668,10 @@ export default function CesiumGlobe({ goToCity, activeStage = -1, stageAnimating
           name: pt.name,
           position: position,
           point: {
-            pixelSize: new Cesium.CallbackProperty((time) => {
-              const phase = Cesium.JulianDate.secondsDifference(time, viewer.current.clock.currentTime) * 2 * Math.PI / 2;
-              return 15 + Math.sin(phase) * 2;
-            }, false),
+            pixelSize: 15,
             color: Cesium.Color.WHITE.withAlpha(0.8),
             outlineColor: Cesium.Color.WHITE.withAlpha(0.4),
-            outlineWidth: new Cesium.CallbackProperty((time) => {
-              const phase = Cesium.JulianDate.secondsDifference(time, viewer.current.clock.currentTime) * 2 * Math.PI / 2;
-              return 3 + Math.sin(phase) * 3;
-            }, false),
+            outlineWidth: 3,
             heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
             scaleByDistance: new Cesium.NearFarScalar(1.5e2, 1.5, 1.5e7, 0.5),
           },
@@ -675,10 +689,7 @@ export default function CesiumGlobe({ goToCity, activeStage = -1, stageAnimating
             scaleByDistance: new Cesium.NearFarScalar(1.5e2, 1.2, 1.5e7, 0.6),
             horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            scale: new Cesium.CallbackProperty((time) => {
-              const phase = Cesium.JulianDate.secondsDifference(time, viewer.current.clock.currentTime) * 2 * Math.PI / 2;
-              return 1 + Math.sin(phase) * 0.02;
-            }, false),
+            scale: 1,
           },
           description: pt.name,
           pointData: pt,
@@ -728,6 +739,21 @@ export default function CesiumGlobe({ goToCity, activeStage = -1, stageAnimating
 
   return (
     <div ref={cesiumContainer} style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden', position: 'relative' }}>
+
+      {/* 地球就绪前的加载遮罩（覆盖 Cesium 初始化时的空白） */}
+      {!globeReady && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 200,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(135deg, #0a0f1a 0%, #0d1525 40%, #111d35 100%)',
+          color: 'rgba(255, 255, 255, 0.7)', fontSize: '1rem', letterSpacing: '2px',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '12px' }}>🌍</div>
+            <span>正在加载星海…</span>
+          </div>
+        </div>
+      )}
 
       {/* 底图切换按钮：本地底图（流畅）/ 高清在线底图（细节多） */}
       <button

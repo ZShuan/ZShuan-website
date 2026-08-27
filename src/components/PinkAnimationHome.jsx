@@ -1,8 +1,26 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import CesiumGlobe from './CesiumGlobe';
 import { supabase } from '../lib/supabaseClient';
 import AdminTokenManager from './admin/AdminTokenManager';
+
+// 懒加载 Cesium 地球：把 3D 引擎拆成独立 chunk，首屏主包变小，
+// 切到不需要地球的页签（breaking/letters/城市详情）时不加载它。
+const CesiumGlobe = lazy(() => import('./CesiumGlobe'));
+
+// 地球 chunk 加载期间的轻量占位
+const GlobeFallback = () => (
+    <div style={{
+        width: '100vw', height: '100vh',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'linear-gradient(135deg, #0a0f1a 0%, #0d1525 40%, #111d35 100%)',
+        color: 'rgba(255, 255, 255, 0.7)', fontSize: '1rem', letterSpacing: '2px',
+    }}>
+        <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '12px' }}>🌍</div>
+            <span>正在加载星海…</span>
+        </div>
+    </div>
+);
 
 
 // Carousel sequence: 0(15s) -> 1(15s) -> 2(40s) -> 1(15s) -> 0(15s) -> repeat
@@ -190,14 +208,16 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
             }}
         >
             {/* Globe */}
-            <CesiumGlobe
-                goToCity={goToCity}
-                activeStage={activeStage}
-                stageAnimating={isAnimating && !isCityMode}
-                isCityMode={isCityMode}
-                onUserInteract={handleUserInteract}
-                cityPoints={cityPoints}
-            />
+            <Suspense fallback={<GlobeFallback />}>
+                <CesiumGlobe
+                    goToCity={goToCity}
+                    activeStage={activeStage}
+                    stageAnimating={isAnimating && !isCityMode}
+                    isCityMode={isCityMode}
+                    onUserInteract={handleUserInteract}
+                    cityPoints={cityPoints}
+                />
+            </Suspense>
 
             {/* Bottom Navigation: 3 Glowing Dots */}
             <motion.div
