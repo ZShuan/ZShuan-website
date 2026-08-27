@@ -36,13 +36,20 @@ $authHeader = "AUTHORIZATION: basic $b64"
 # 网络不稳定时自动重试 git 命令（最多 5 次）
 function Invoke-GitRetry {
     param([string[]]$GitArgs)
-    foreach ($i in 1..5) {
-        git -c http.version=HTTP/1.1 -c http.postBuffer=209715200 -c http.extraheader="$authHeader" @GitArgs 2>&1 | Out-Host
-        if ($LASTEXITCODE -eq 0) { return $true }
-        Write-Host "（网络不稳定，第 $i 次重试中...）"
-        Start-Sleep -Seconds 8
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        foreach ($i in 1..5) {
+            $output = git -c http.version=HTTP/1.1 -c http.postBuffer=209715200 -c http.extraheader="$authHeader" @GitArgs 2>&1
+            $output | Out-Host
+            if ($LASTEXITCODE -eq 0) { return $true }
+            Write-Host "（网络不稳定，第 $i 次重试中...）"
+            Start-Sleep -Seconds 8
+        }
+        return $false
+    } finally {
+        $ErrorActionPreference = $prevEap
     }
-    return $false
 }
 
 # 2. 构建项目
