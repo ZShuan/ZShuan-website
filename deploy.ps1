@@ -53,13 +53,15 @@ git add -A
 $staged = git diff --cached --name-only
 if ($staged) {
     git commit -m "Update $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" | Out-Null
-    git -c http.version=HTTP/1.1 -c http.postBuffer=209715200 -c http.extraheader="$authHeader" push origin main
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "main 推送失败，请检查 Token 权限" -ForegroundColor Red
-        exit 1
-    }
 } else {
     Write-Host "（没有代码变更，跳过 main 提交）"
+}
+# 先同步远端（防止网页端上传照片等操作产生的新提交导致推送被拒）
+git -c http.version=HTTP/1.1 -c http.extraheader="$authHeader" pull --rebase origin main
+git -c http.version=HTTP/1.1 -c http.postBuffer=209715200 -c http.extraheader="$authHeader" push origin main
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "main 推送失败，请检查 Token 权限" -ForegroundColor Red
+    exit 1
 }
 
 # 4. 更新 gh-pages 部署分支
