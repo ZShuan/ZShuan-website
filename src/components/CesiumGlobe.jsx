@@ -76,6 +76,10 @@ export default function CesiumGlobe({ goToCity, activeStage = -1, stageAnimating
       const newLayer = viewer.current.imageryLayers.addImageryProvider(provider);
       currentImageryLayerRef.current = newLayer;
 
+      // 高清在线底图用更低的误差阈值：放大时更快请求并显示清晰瓦片
+      viewer.current.scene.globe.maximumScreenSpaceError =
+        styleKey === 'satellite' ? 1.5 : styleKey === 'street' ? 2 : 4;
+
     } catch (error) {
     }
   };
