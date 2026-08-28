@@ -4,8 +4,9 @@ import { resolve } from 'path';
 
 export default defineConfig(({ command }) => {
   const isVercel = process.env.VERCEL === '1' || process.env.VERCEL === 'true';
-  // GitHub Pages 项目路径：https://zshuan.github.io/ZShuan-website/
-  const basePrefix = (command === 'build' && !isVercel) ? '/ZShuan-website/' : '/';
+  const isNetlify = process.env.NETLIFY === 'true';
+  // GitHub Pages 走子路径 /ZShuan-website/；Vercel/Netlify 走根路径 /
+  const basePrefix = (command === 'build' && !isVercel && !isNetlify) ? '/ZShuan-website/' : '/';
 
   return {
     plugins: [react()],

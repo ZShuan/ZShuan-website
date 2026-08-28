@@ -266,44 +266,46 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
             </Suspense>
 
             {/* Bottom Navigation: 3 Glowing Dots */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 1.0 }} // Reduced duration and removed delay for better response
-                style={{
-                    position: 'absolute',
-                    bottom: isMobile ? '110px' : '32px', // Stay above the bottom navbar on mobile
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    gap: '18px',
-                    alignItems: 'center',
-                    zIndex: 100000, // Higher z-index to stay above other elements
-                }}
-            >
-                {[0, 1, 2].map((i) => (
-                    <div
-                        key={i}
-                        onClick={() => handleStageClick(i)}
-                        style={{
-                            width: '34px', height: '34px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <div style={{
-                            width: activeStage === i ? '10px' : '6px',
-                            height: activeStage === i ? '10px' : '6px',
-                            borderRadius: '50%',
-                            background: activeStage === i ? '#fff' : 'rgba(255,255,255,0.35)',
-                            boxShadow: activeStage === i
-                                ? '0 0 8px 3px rgba(255,255,255,0.5), 0 0 20px 6px rgba(255,255,255,0.2)'
-                                : 'none',
-                            transition: 'all 0.4s ease',
-                        }} />
-                    </div>
-                ))}
-            </motion.div>
+            {!showAdmin && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1.0 }} // Reduced duration and removed delay for better response
+                    style={{
+                        position: 'absolute',
+                        bottom: isMobile ? '110px' : '32px', // Stay above the bottom navbar on mobile
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        display: 'flex',
+                        gap: '18px',
+                        alignItems: 'center',
+                        zIndex: 100000, // Higher z-index to stay above other elements
+                    }}
+                >
+                    {[0, 1, 2].map((i) => (
+                        <div
+                            key={i}
+                            onClick={() => handleStageClick(i)}
+                            style={{
+                                width: '34px', height: '34px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <div style={{
+                                width: activeStage === i ? '10px' : '6px',
+                                height: activeStage === i ? '10px' : '6px',
+                                borderRadius: '50%',
+                                background: activeStage === i ? '#fff' : 'rgba(255,255,255,0.35)',
+                                boxShadow: activeStage === i
+                                    ? '0 0 8px 3px rgba(255,255,255,0.5), 0 0 20px 6px rgba(255,255,255,0.2)'
+                                    : 'none',
+                                transition: 'all 0.4s ease',
+                            }} />
+                        </div>
+                    ))}
+                </motion.div>
+            )}
 
             {/* 控制栏：桌面右下 / 移动端右上，均提供地点列表与管理入口 */}
             <div style={controlBarStyle}>
@@ -377,6 +379,7 @@ export default function PinkAnimationHome({ goTo, goToCity, isCityMode = false, 
                 isOpen={showAdmin}
                 onClose={() => setShowAdmin(false)}
                 onCityCreated={refreshCities}
+                goToCity={goToCity}
             />
         </div>
     );

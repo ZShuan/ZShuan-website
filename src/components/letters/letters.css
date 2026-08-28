@@ -906,7 +906,7 @@
     }
     /* 桌面固定 600px 的信封牌堆，在小屏整体缩放以适配窄屏 */
     .stack-wrapper {
-        transform: scale(0.42);
+        transform: scale(0.6);
         transform-origin: center top;
     }
     /* 写字/读信纸面在小屏更宽一些，防止过窄 */
@@ -914,6 +914,26 @@
         width: 90vw;
         height: 82vh;
         max-height: 82vh;
+        overflow-y: auto;
+    }
+    /* 写信表单底部允许换行，避免按钮被挤出屏幕右侧 */
+    .writing-mode .form-footer {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .date-input-container .sender-input {
+        width: 130px;
+    }
+    .form-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+    .btn-cancel,
+    .btn-draft,
+    .btn-send {
+        padding: 8px 12px;
+        font-size: 1rem;
     }
     /* 底部“写信笔”与草稿托盘上移，避开底部导航 */
     .corner-pen-illustration {

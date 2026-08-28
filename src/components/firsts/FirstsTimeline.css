@@ -403,11 +403,12 @@
     }
 
     .firsts-add-btn {
-        bottom: 20px;
+        bottom: 96px;
         right: 20px;
         width: 48px;
         height: 48px;
         font-size: 24px;
+        z-index: 1100;
     }
 }
 

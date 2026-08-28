@@ -4,7 +4,7 @@ import imageCompression from 'browser-image-compression';
 import { supabase } from '../../lib/supabaseClient';
 import { uploadCityImage, deleteStorageImages, pathFromPublicUrl, CITY_BUCKET } from '../../lib/supabaseStorage';
 
-export default function CityUploadPanel({ onBack, onCityCreated }) {
+export default function CityUploadPanel({ onBack, onCityCreated, goToCity }) {
     const [cityName, setCityName] = useState('');
     const [visitDate, setVisitDate] = useState('');
     const [departure, setDeparture] = useState('');
@@ -142,6 +142,14 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
         setImages([]);
         originalCityImageUrlsRef.current = [];
         setSubmitResult({ status: '', message: '' });
+    };
+
+    // 从地点清单快速进入照片浏览页（站内跳转，不新开标签页）
+    const handleViewCity = (city) => {
+        if (city?.name) {
+            if (onBack) onBack();
+            if (goToCity) goToCity(city.name);
+        }
     };
 
     // ========= Form Submission & Cleanup =========
@@ -457,13 +465,14 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
                         ) : cityList.map(city => (
                             <motion.div
                                 key={city.id}
-                                onClick={() => handleEditCity(city)}
+                                onClick={() => handleViewCity(city)}
                                 whileHover={{ x: 5, background: 'rgba(255,255,255,0.08)' }}
                                 style={{
                                     ...listItemStyle,
                                     borderColor: editingCityId === city.id ? '#667eea' : 'rgba(255,255,255,0.05)',
                                     background: editingCityId === city.id ? 'rgba(102,126,234,0.15)' : 'rgba(255,255,255,0.03)'
                                 }}
+                                title="点击查看该地点的照片"
                             >
                                 <img src={city.main_image} style={listImgStyle} alt="" />
                                 <div style={{ flex: 1 }}>
@@ -473,12 +482,12 @@ export default function CityUploadPanel({ onBack, onCityCreated }) {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        window.open(`/city/${city.name}`, '_blank');
+                                        handleEditCity(city);
                                     }}
-                                    style={jumpButtonStyle}
-                                    title="查看详情"
+                                    style={editButtonStyle}
+                                    title="编辑该地点"
                                 >
-                                    ↗
+                                    ✏️ 编辑
                                 </button>
                             </motion.div>
                         ))}
@@ -595,6 +604,7 @@ const listScrollAreaStyle = { flex: 1, overflowY: 'auto', paddingRight: '10px' }
 const listItemStyle = { display: 'flex', gap: '15px', padding: '12px', borderRadius: '18px', border: '1px solid transparent', cursor: 'pointer', marginBottom: '10px', transition: 'all 0.2s', alignItems: 'center' };
 const listImgStyle = { width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 };
 const jumpButtonStyle = { width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', transition: 'all 0.2s' };
+const editButtonStyle = { flexShrink: 0, padding: '6px 10px', borderRadius: '10px', border: 'none', background: 'rgba(255,255,255,0.12)', color: 'white', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, transition: 'all 0.2s', whiteSpace: 'nowrap' };
 const loaderCenterStyle = { textAlign: 'center', padding: '40px', opacity: 0.5 };
 const messageBoxStyle = { padding: '15px', borderRadius: '14px', marginBottom: '20px', fontSize: '0.9rem', textAlign: 'center', fontWeight: 500 };
 const loaderSmallStyle = { position: 'absolute', right: '15px', top: '15px', width: '15px', height: '15px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 1s linear infinite' };
